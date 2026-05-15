@@ -1,0 +1,38 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Model & data files (too large for GitHub)
+*.pth
+*.db
+dataset.zip
+dataset_extracted/
+
+# Node
+node_modules/
+dist/
+dist-ssr/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Uploads
+uploads/
+
+# Editor
+.vscode/
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.local
+
+# Env
+.env
