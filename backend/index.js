@@ -1,11 +1,14 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const multer = require('multer');
 const path = require('path');
-const { spawn } = require('child_process');
+const fs = require('fs');
 const Pest = require('./models/Pest');
 require('dotenv').config();
+
+// Import routes
+const authRoutes = require('./routes/auth');
+const predictRoutes = require('./routes/predict');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -14,81 +17,45 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
+// Serve uploaded images as static files
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // MongoDB Connection
 const connStr = process.env.MONGODB_URI || 'mongodb://localhost:27017/pestDB';
 mongoose.connect(connStr)
-  .then(() => console.log('MongoDB Connected'))
-  .catch(err => console.error('MongoDB Connection Error:', err));
+  .then(() => console.log('✅ MongoDB Connected'))
+  .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
-// Multer Setup for Image Uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/');
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname));
-  }
-});
-const upload = multer({ storage });
+// Mount routes
+app.use('/api/auth', authRoutes);
+app.use('/api', predictRoutes);
 
-// Create uploads directory if it doesn't exist
-const fs = require('fs');
-if (!fs.existsSync('uploads')) {
-  fs.mkdirSync('uploads');
-}
-
-// Routes
-app.post('/api/predict', upload.single('image'), async (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: 'No image uploaded' });
-  }
-
-  const imagePath = path.join(__dirname, req.file.path);
-  
-  // Call Python script
-  const pythonProcess = spawn('python', ['../predict.py', imagePath]);
-
-  let resultData = '';
-  pythonProcess.stdout.on('data', (data) => {
-    resultData += data.toString();
-  });
-
-  pythonProcess.stderr.on('data', (data) => {
-    console.error(`Python Error: ${data}`);
-  });
-
-  pythonProcess.on('close', async (code) => {
-    try {
-      const prediction = JSON.parse(resultData);
-      
-      if (prediction.error) {
-        return res.status(500).json({ error: prediction.error });
-      }
-
-      // Fetch solution from MongoDB
-      const pestInfo = await Pest.findOne({ name: prediction.label });
-
-      res.json({
-        label: prediction.label,
-        confidence: prediction.confidence,
-        description: pestInfo ? pestInfo.description : 'No description found',
-        solution: pestInfo ? pestInfo.solution : 'No solution found'
-      });
-      
-      // Cleanup: remove uploaded file
-      fs.unlinkSync(imagePath);
-    } catch (err) {
-      console.error('Parsing Error:', err, 'ResultData:', resultData);
-      res.status(500).json({ error: 'Failed to process prediction output' });
-    }
-  });
-});
-
+// Pests endpoint (public — no auth required)
 app.get('/api/pests', async (req, res) => {
-  const pests = await Pest.find();
-  res.json(pests);
+  try {
+    const pests = await Pest.find();
+    res.json(pests);
+  } catch (err) {
+    console.error('Failed to fetch pests:', err);
+    res.status(500).json({ error: 'Failed to fetch pest data' });
+  }
+});
+
+// Health check (public)
+app.get('/api/health', (req, res) => {
+  const projectRoot = path.resolve(__dirname, '..');
+  const pythonExe = process.platform === 'win32'
+    ? path.join(projectRoot, 'venv', 'Scripts', 'python.exe')
+    : path.join(projectRoot, 'venv', 'bin', 'python');
+
+  res.json({
+    status: 'ok',
+    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+    pythonPath: pythonExe,
+    pythonExists: fs.existsSync(pythonExe)
+  });
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
