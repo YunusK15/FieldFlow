@@ -66,9 +66,7 @@ function PestCard({ pest, index }) {
   )
 }
 
-/* ════════════════════════════════
-   PEST DETECTION PAGE
-   ════════════════════════════════ */
+
 export default function PestDetection() {
   const { authFetch } = useAuth()
   const [selectedFile, setSelectedFile] = useState(null)

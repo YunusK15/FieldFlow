@@ -9,6 +9,9 @@ require('dotenv').config();
 // Import routes
 const authRoutes = require('./routes/auth');
 const predictRoutes = require('./routes/predict');
+const weatherRoutes = require('./routes/weather');
+const outbreakRoutes = require('./routes/outbreaks');
+const technologyRoutes = require('./routes/technologies');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -29,6 +32,9 @@ mongoose.connect(connStr)
 // Mount routes
 app.use('/api/auth', authRoutes);
 app.use('/api', predictRoutes);
+app.use('/api/weather', weatherRoutes);
+app.use('/api/outbreaks', outbreakRoutes);
+app.use('/api/technologies', technologyRoutes);
 
 // Pests endpoint (public — no auth required)
 app.get('/api/pests', async (req, res) => {

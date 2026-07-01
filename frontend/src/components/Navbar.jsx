@@ -17,7 +17,10 @@ export default function Navbar() {
     { to: '/', label: 'Home' },
     { to: '/technologies', label: 'Technologies' },
     { to: '/detect', label: 'Pest Detection' },
-    ...(user ? [{ to: '/history', label: 'History' }] : []),
+    ...(user ? [
+      { to: '/history', label: 'History' },
+      { to: '/analytics', label: 'Analytics' }
+    ] : []),
     { to: '/about', label: 'About' },
   ]
 
