@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useAuth } from '../context/AuthContext'
 
 /* ── Pest Icon Map ── */
 const PEST_ICONS = {
@@ -9,7 +10,7 @@ const PEST_ICONS = {
 
 /* ── Confidence Gauge ── */
 function ConfidenceGauge({ confidence }) {
-  const pct = Math.round(confidence * 100)
+  const pct = Math.round(confidence)
   const radius = 52
   const circumference = 2 * Math.PI * radius
   const offset = circumference - (pct / 100) * circumference
@@ -69,6 +70,7 @@ function PestCard({ pest, index }) {
    PEST DETECTION PAGE
    ════════════════════════════════ */
 export default function PestDetection() {
+  const { authFetch } = useAuth()
   const [selectedFile, setSelectedFile] = useState(null)
   const [preview, setPreview] = useState(null)
   const [prediction, setPrediction] = useState(null)
@@ -115,7 +117,7 @@ export default function PestDetection() {
     const formData = new FormData()
     formData.append('image', selectedFile)
     try {
-      const res = await fetch('/api/predict', { method: 'POST', body: formData })
+      const res = await authFetch('/api/predict', { method: 'POST', body: formData })
       if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Prediction failed') }
       setPrediction(await res.json())
     } catch (err) { setError(err.message || 'Failed to connect to the server') }

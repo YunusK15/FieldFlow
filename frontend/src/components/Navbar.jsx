@@ -1,15 +1,25 @@
 import { useState } from 'react'
-import { Link, NavLink } from 'react-router-dom'
-
-const NAV_LINKS = [
-  { to: '/', label: 'Home' },
-  { to: '/technologies', label: 'Technologies' },
-  { to: '/detect', label: 'Pest Detection' },
-  { to: '/about', label: 'About' },
-]
+import { Link, NavLink, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false)
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
+
+  const handleLogout = () => {
+    logout()
+    setMenuOpen(false)
+    navigate('/')
+  }
+
+  const NAV_LINKS = [
+    { to: '/', label: 'Home' },
+    { to: '/technologies', label: 'Technologies' },
+    { to: '/detect', label: 'Pest Detection' },
+    ...(user ? [{ to: '/history', label: 'History' }] : []),
+    { to: '/about', label: 'About' },
+  ]
 
   return (
     <nav className="navbar">
@@ -34,6 +44,25 @@ export default function Navbar() {
               {link.label}
             </NavLink>
           ))}
+
+          {/* Auth buttons */}
+          {user ? (
+            <div className="navbar-user-section">
+              <div className="navbar-user-badge">
+                <div className="navbar-avatar">{user.name?.charAt(0)?.toUpperCase() || '?'}</div>
+                <span className="navbar-username">{user.name?.split(' ')[0]}</span>
+              </div>
+              <button onClick={handleLogout} className="navbar-link navbar-logout-btn" title="Sign out">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+              </button>
+            </div>
+          ) : (
+            <NavLink to="/login" className={({ isActive }) => `navbar-auth-btn ${isActive ? 'active' : ''}`}>
+              Sign In
+            </NavLink>
+          )}
         </div>
 
         {/* Mobile toggle */}
@@ -63,6 +92,25 @@ export default function Navbar() {
             {link.label}
           </NavLink>
         ))}
+        {user ? (
+          <>
+            <div className="navbar-mobile-user">
+              <div className="navbar-avatar">{user.name?.charAt(0)?.toUpperCase() || '?'}</div>
+              <span className="text-gray-300 text-sm font-medium">{user.name}</span>
+            </div>
+            <button onClick={handleLogout} className="navbar-mobile-link" style={{ color: 'var(--danger)' }}>
+              Sign Out
+            </button>
+          </>
+        ) : (
+          <NavLink
+            to="/login"
+            className={({ isActive }) => `navbar-mobile-link ${isActive ? 'active' : ''}`}
+            onClick={() => setMenuOpen(false)}
+          >
+            Sign In
+          </NavLink>
+        )}
       </div>
     </nav>
   )
