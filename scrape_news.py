@@ -17,11 +17,13 @@ def scrape_source(source_name, url):
         url, 
         headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
     )
+    import ssl
+    ssl_context = ssl._create_unverified_context()
     
     articles = []
     try:
-        # Set a 5-second timeout for each source to avoid hanging
-        with urllib.request.urlopen(req, timeout=5) as response:
+        # Set a 3-second timeout and bypass SSL verification to prevent hanging on expired certs
+        with urllib.request.urlopen(req, timeout=3, context=ssl_context) as response:
             xml_data = response.read()
             
         root = ET.fromstring(xml_data)

@@ -2,7 +2,8 @@ import { createContext, useContext, useState, useEffect } from 'react'
 
 const AuthContext = createContext(null)
 
-const API_BASE = '/api'
+const backendUrl = import.meta.env.VITE_API_URL || ''
+const API_BASE = `${backendUrl}/api`
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
@@ -63,7 +64,9 @@ export function AuthProvider({ children }) {
 
   // Helper for authenticated fetch calls
   const authFetch = (url, options = {}) => {
-    return fetch(url, {
+    const backendUrl = import.meta.env.VITE_API_URL || ''
+    const absoluteUrl = url.startsWith('http') ? url : `${backendUrl}${url}`
+    return fetch(absoluteUrl, {
       ...options,
       headers: {
         ...options.headers,

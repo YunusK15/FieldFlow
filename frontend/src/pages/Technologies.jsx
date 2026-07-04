@@ -14,7 +14,7 @@ export default function Technologies() {
 
   const fetchTechnologies = async () => {
     try {
-      const res = await fetch('/api/technologies')
+      const res = await authFetch('/api/technologies')
       if (!res.ok) throw new Error('Failed to fetch technologies catalog.')
       const data = await res.json()
       setTechnologies(data)
