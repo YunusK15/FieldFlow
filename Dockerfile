@@ -15,6 +15,7 @@ WORKDIR /app
 # Copy python dependencies and build virtual environment (so predict.py runs inside venv as expected)
 COPY requirements.txt .
 RUN python -m venv venv
+RUN ./venv/bin/pip install --upgrade pip
 RUN ./venv/bin/pip install --no-cache-dir -r requirements.txt
 
 # Copy backend package and install Node dependencies
