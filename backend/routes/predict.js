@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -6,8 +7,19 @@ const { spawn } = require('child_process');
 const auth = require('../middleware/auth');
 const Pest = require('../models/Pest');
 const Prediction = require('../models/Prediction');
+const cloudinary = require('cloudinary').v2;
 
 const router = express.Router();
+
+// Configure Cloudinary only if variables are present
+const isCloudinaryConfigured = !!(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET);
+if (isCloudinaryConfigured) {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+  });
+}
 
 // Multer Setup for Image Uploads
 const uploadsDir = path.join(__dirname, '..', 'uploads');
@@ -108,10 +120,28 @@ router.post('/predict', auth, upload.single('image'), async (req, res) => {
       const description = pestInfo ? pestInfo.description : 'No description found';
       const solution = pestInfo ? pestInfo.solution : 'No solution found';
 
-      // Save prediction to database (image is kept permanently)
+      // Upload to Cloudinary if configured, otherwise fallback to local relative path
+      let finalImagePath = relativeImagePath;
+      if (isCloudinaryConfigured) {
+        try {
+          const uploadResult = await cloudinary.uploader.upload(imagePath, {
+            folder: 'fieldflow'
+          });
+          finalImagePath = uploadResult.secure_url;
+        } catch (uploadErr) {
+          console.error('Failed to upload image to Cloudinary:', uploadErr);
+        }
+      }
+
+      // Cleanup local file after uploading to Cloudinary
+      if (isCloudinaryConfigured && finalImagePath.startsWith('http')) {
+        try { fs.unlinkSync(imagePath); } catch {}
+      }
+
+      // Save prediction to database
       const savedPrediction = await Prediction.create({
         user: req.user.id,
-        imagePath: relativeImagePath,
+        imagePath: finalImagePath,
         originalFilename,
         label: prediction.label,
         confidence: prediction.confidence,
@@ -125,7 +155,7 @@ router.post('/predict', auth, upload.single('image'), async (req, res) => {
         confidence: prediction.confidence,
         description,
         solution,
-        imageUrl: `/${relativeImagePath}`,
+        imageUrl: finalImagePath.startsWith('http') ? finalImagePath : `/${finalImagePath}`,
         createdAt: savedPrediction.createdAt
       });
     } catch (err) {
@@ -145,13 +175,129 @@ router.get('/predictions', auth, async (req, res) => {
     // Add imageUrl to each prediction
     const results = predictions.map(p => ({
       ...p,
-      imageUrl: `/${p.imagePath}`
+      imageUrl: p.imagePath.startsWith('http') ? p.imagePath : `/${p.imagePath}`
     }));
 
     res.json(results);
   } catch (err) {
     console.error('Failed to fetch predictions:', err);
     res.status(500).json({ error: 'Failed to fetch prediction history.' });
+  }
+});
+
+// GET /api/predictions/analytics - Get aggregated statistics for user's scans
+router.get('/predictions/analytics', auth, async (req, res) => {
+  const userId = req.user.id;
+  try {
+    const totalCount = await Prediction.countDocuments({ user: userId });
+    
+    if (totalCount === 0) {
+      return res.json({
+        totalScans: 0,
+        mostCommonPest: { name: 'None', count: 0, percentage: 0 },
+        avgConfidence: 0,
+        timeline: [],
+        confidenceSpread: { high: 0, medium: 0, low: 0 },
+        sortedPests: []
+      });
+    }
+
+    // 1. Average confidence
+    const avgConfResult = await Prediction.aggregate([
+      { $match: { user: new mongoose.Types.ObjectId(userId) } },
+      { $group: { _id: null, avgConf: { $avg: '$confidence' } } }
+    ]);
+    const avgConfidence = avgConfResult[0] ? Math.round(avgConfResult[0].avgConf) : 0;
+
+    // 2. Pest Distribution & Most Common
+    const pestDist = await Prediction.aggregate([
+      { $match: { user: new mongoose.Types.ObjectId(userId) } },
+      { $group: { _id: '$label', count: { $sum: 1 } } },
+      { $sort: { count: -1 } }
+    ]);
+
+    const sortedPests = pestDist.map(item => ({
+      name: item._id,
+      count: item.count,
+      percentage: Math.round((item.count / totalCount) * 100)
+    }));
+    const mostCommonPest = sortedPests[0] || { name: 'None', count: 0, percentage: 0 };
+
+    // 3. Last 7 Days Timeline
+    const last7Days = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().split('T')[0];
+      last7Days.push({
+        dateStr,
+        label: d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+      });
+    }
+
+    const startOfTimeline = new Date();
+    startOfTimeline.setDate(startOfTimeline.getDate() - 6);
+    startOfTimeline.setHours(0, 0, 0, 0);
+
+    const timelineCounts = await Prediction.aggregate([
+      {
+        $match: {
+          user: new mongoose.Types.ObjectId(userId),
+          createdAt: { $gte: startOfTimeline }
+        }
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const countsMap = {};
+    timelineCounts.forEach(item => {
+      countsMap[item._id] = item.count;
+    });
+
+    const timeline = last7Days.map(day => ({
+      ...day,
+      count: countsMap[day.dateStr] || 0
+    }));
+
+    // 4. Confidence Spread
+    const confidenceSpread = { high: 0, medium: 0, low: 0 };
+    const confidenceBands = await Prediction.aggregate([
+      { $match: { user: new mongoose.Types.ObjectId(userId) } },
+      {
+        $bucket: {
+          groupBy: '$confidence',
+          boundaries: [0, 70, 85, 101],
+          default: 'low',
+          output: {
+            count: { $sum: 1 }
+          }
+        }
+      }
+    ]);
+
+    confidenceBands.forEach(band => {
+      if (band._id === 0) confidenceSpread.low = band.count;
+      else if (band._id === 70) confidenceSpread.medium = band.count;
+      else if (band._id === 85) confidenceSpread.high = band.count;
+    });
+
+    res.json({
+      totalScans: totalCount,
+      mostCommonPest,
+      avgConfidence,
+      timeline,
+      confidenceSpread,
+      sortedPests
+    });
+
+  } catch (err) {
+    console.error('Failed to aggregate analytics:', err);
+    res.status(500).json({ error: 'Failed to process history analytics.' });
   }
 });
 

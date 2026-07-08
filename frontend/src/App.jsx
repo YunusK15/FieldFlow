@@ -9,6 +9,7 @@ import About from './pages/About'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import History from './pages/History'
+import Analytics from './pages/Analytics'
 
 function App() {
   return (
@@ -26,6 +27,11 @@ function App() {
             <Route path="/history" element={
               <ProtectedRoute>
                 <History />
+              </ProtectedRoute>
+            } />
+            <Route path="/analytics" element={
+              <ProtectedRoute>
+                <Analytics />
               </ProtectedRoute>
             } />
             <Route path="/about" element={<About />} />

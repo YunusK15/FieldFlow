@@ -66,9 +66,7 @@ function PestCard({ pest, index }) {
   )
 }
 
-/* ════════════════════════════════
-   PEST DETECTION PAGE
-   ════════════════════════════════ */
+
 export default function PestDetection() {
   const { authFetch } = useAuth()
   const [selectedFile, setSelectedFile] = useState(null)
@@ -84,7 +82,7 @@ export default function PestDetection() {
 
   const fetchPests = async () => {
     try {
-      const res = await fetch('/api/pests')
+      const res = await authFetch('/api/pests')
       const data = await res.json()
       setPests(data)
     } catch (err) { console.error('Failed to fetch pests:', err) }
