@@ -97,8 +97,6 @@ def scrape_all():
     sources = [
         {"name": "AgFunderNews", "url": "https://agfundernews.com/feed"},
         {"name": "PrecisionAg", "url": "https://www.precisionag.com/feed/"},
-        {"name": "SeedWorld", "url": "https://seedworld.com/feed/"},
-        {"name": "SuccessfulFarming", "url": "https://www.agriculture.com/rss/technology"},
         {"name": "AgriPulse", "url": "https://www.agri-pulse.com/rss/articles"}
     ]
     

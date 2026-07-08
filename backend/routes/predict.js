@@ -7,8 +7,19 @@ const { spawn } = require('child_process');
 const auth = require('../middleware/auth');
 const Pest = require('../models/Pest');
 const Prediction = require('../models/Prediction');
+const cloudinary = require('cloudinary').v2;
 
 const router = express.Router();
+
+// Configure Cloudinary only if variables are present
+const isCloudinaryConfigured = !!(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET);
+if (isCloudinaryConfigured) {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+  });
+}
 
 // Multer Setup for Image Uploads
 const uploadsDir = path.join(__dirname, '..', 'uploads');
@@ -109,10 +120,28 @@ router.post('/predict', auth, upload.single('image'), async (req, res) => {
       const description = pestInfo ? pestInfo.description : 'No description found';
       const solution = pestInfo ? pestInfo.solution : 'No solution found';
 
-      // Save prediction to database (image is kept permanently)
+      // Upload to Cloudinary if configured, otherwise fallback to local relative path
+      let finalImagePath = relativeImagePath;
+      if (isCloudinaryConfigured) {
+        try {
+          const uploadResult = await cloudinary.uploader.upload(imagePath, {
+            folder: 'fieldflow'
+          });
+          finalImagePath = uploadResult.secure_url;
+        } catch (uploadErr) {
+          console.error('Failed to upload image to Cloudinary:', uploadErr);
+        }
+      }
+
+      // Cleanup local file after uploading to Cloudinary
+      if (isCloudinaryConfigured && finalImagePath.startsWith('http')) {
+        try { fs.unlinkSync(imagePath); } catch {}
+      }
+
+      // Save prediction to database
       const savedPrediction = await Prediction.create({
         user: req.user.id,
-        imagePath: relativeImagePath,
+        imagePath: finalImagePath,
         originalFilename,
         label: prediction.label,
         confidence: prediction.confidence,
@@ -126,7 +155,7 @@ router.post('/predict', auth, upload.single('image'), async (req, res) => {
         confidence: prediction.confidence,
         description,
         solution,
-        imageUrl: `/${relativeImagePath}`,
+        imageUrl: finalImagePath.startsWith('http') ? finalImagePath : `/${finalImagePath}`,
         createdAt: savedPrediction.createdAt
       });
     } catch (err) {
@@ -146,7 +175,7 @@ router.get('/predictions', auth, async (req, res) => {
     // Add imageUrl to each prediction
     const results = predictions.map(p => ({
       ...p,
-      imageUrl: `/${p.imagePath}`
+      imageUrl: p.imagePath.startsWith('http') ? p.imagePath : `/${p.imagePath}`
     }));
 
     res.json(results);
