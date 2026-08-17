@@ -1,4 +1,6 @@
-FieldFlow is an intelligent agricultural management application designed to assist farmers and agricultural professionals with pest classification, weather tracking, outbreak monitoring, and the latest agricultural technologies. It features a React-based frontend and an Express/MongoDB backend, integrated with a PyTorch machine learning model for accurate pest identification.
+# FieldFlow
+
+FieldFlow is an intelligent agricultural management application designed to assist farmers and agricultural professionals with pest classification, weather tracking, outbreak monitoring, and the latest agricultural technologies. It features a React-based frontend and an Express/MongoDB backend, integrated with a PyTorch machine learning model capable of identifying **132 Indian pest species** (trained on the Pestopia dataset).
 
 ## Features
 
@@ -82,7 +84,7 @@ source venv/bin/activate
 
 pip install -r requirements.txt
 ```
-Ensure you have the `pest_classifier_best.pth` and `classes.txt` in the root directory.
+Ensure you have the `pest_classifier_v2.pth` (or `pest_classifier_v1.pth`) and `classes.txt` in the root directory.
 
 ## Docker Deployment
 
@@ -99,5 +101,7 @@ docker run -p 5000:5000 fieldflow
 
 - `/frontend`: React application.
 - `/backend`: Express server handling API requests, authentication, and Python script execution.
-- `predict.py`, `train.py`: Machine learning scripts for pest classification.
+- `predict.py`: Inference script for pest classification.
+- `train.py`: V1 local training script for 12 generic pest species.
+- `fieldflowv2.py`: V2 Colab training script for 132 Indian pest species (Pestopia dataset).
 - `Dockerfile`: Containerization configuration for the app.

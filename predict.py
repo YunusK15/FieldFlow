@@ -16,7 +16,7 @@ def predict(image_path):
     model = models.resnet18()
     num_ftrs = model.fc.in_features
     model.fc = nn.Linear(num_ftrs, len(classes))
-    model.load_state_dict(torch.load('pest_classifier_best.pth', map_location=device))
+    model.load_state_dict(torch.load('pest_classifier_v2.pth', map_location=device))
     model = model.to(device)
     model.eval()
 

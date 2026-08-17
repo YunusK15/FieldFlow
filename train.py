@@ -1,3 +1,7 @@
+# FieldFlow V1 Training Script
+# Trains a ResNet18 model on a local dataset (12 pest species)
+# For the V2 Pestopia training script (132 species), see fieldflowv2.py
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -5,6 +9,7 @@ from torchvision import datasets, models, transforms
 from torch.utils.data import DataLoader, random_split
 import os
 import time
+import copy
 
 def train_model():
     # Set device
@@ -35,8 +40,8 @@ def train_model():
     val_size = len(full_dataset) - train_size
     train_dataset, val_dataset = random_split(full_dataset, [train_size, val_size])
     
-    # Apply val transforms to val_dataset (since random_split doesn't do this automatically)
-    # We can use a Subset with a different transform but for simplicity:
+    # Apply val transforms to val_dataset by creating a deep copy of the underlying dataset
+    val_dataset.dataset = copy.deepcopy(full_dataset)
     val_dataset.dataset.transform = data_transforms['val']
 
     train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=2)
@@ -112,7 +117,7 @@ def train_model():
             # Save best model
             if phase == 'val' and epoch_acc > best_acc:
                 best_acc = epoch_acc
-                torch.save(model.state_dict(), 'pest_classifier_best.pth')
+                torch.save(model.state_dict(), 'pest_classifier_v1.pth')
 
     print(f'Best Val Acc: {best_acc:4f}')
     
