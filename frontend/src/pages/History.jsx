@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { getPestIcon } from '../utils/pestIcons'
@@ -10,11 +10,7 @@ export default function History() {
   const [expandedId, setExpandedId] = useState(null)
   const { authFetch } = useAuth()
 
-  useEffect(() => {
-    fetchHistory()
-  }, [])
-
-  const fetchHistory = async () => {
+  const fetchHistory = useCallback(async () => {
     try {
       const res = await authFetch('/api/predictions')
       if (!res.ok) throw new Error('Failed to fetch history')
@@ -25,7 +21,12 @@ export default function History() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [authFetch])
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchHistory()
+  }, [fetchHistory])
 
   const formatDate = (dateStr) => {
     const d = new Date(dateStr)

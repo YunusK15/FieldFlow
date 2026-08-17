@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { getPestIcon } from '../utils/pestIcons'
 
@@ -72,15 +72,18 @@ export default function PestDetection() {
   const [dragOver, setDragOver] = useState(false)
   const fileInputRef = useRef(null)
 
-  useEffect(() => { fetchPests() }, [])
-
-  const fetchPests = async () => {
+  const fetchPests = useCallback(async () => {
     try {
       const res = await authFetch('/api/pests')
       const data = await res.json()
       setPests(data)
     } catch (err) { console.error('Failed to fetch pests:', err) }
-  }
+  }, [authFetch])
+
+  useEffect(() => { 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchPests() 
+  }, [fetchPests])
 
   const selectFile = (file) => {
     if (file) {
