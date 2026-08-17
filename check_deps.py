@@ -17,5 +17,5 @@ try:
 except ImportError:
     print("torchvision: NOT INSTALLED")
 import os
-print(f"Model file exists: {os.path.exists('pest_classifier_best.pth')}")
+print(f"Model file exists: {os.path.exists('pest_classifier_v2.pth')}")
 print(f"Classes file exists: {os.path.exists('classes.txt')}")

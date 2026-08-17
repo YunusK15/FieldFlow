@@ -1,12 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-
-const PEST_ICONS = {
-  ants: '🐜', bees: '🐝', beetle: '🪲', catterpillar: '🐛', earthworms: '🪱',
-  earwig: '🦗', grasshopper: '🦗', moth: '🦋', slug: '🐌', snail: '🐌',
-  wasp: '🐝', weevil: '🪲',
-}
+import { getPestIcon } from '../utils/pestIcons'
 
 const CHART_COLORS = [
   '#34d399', // Emerald
@@ -35,15 +30,29 @@ export default function Analytics() {
   // Outbreaks States
   const [outbreaks, setOutbreaks] = useState([])
   const [submittingReport, setSubmittingReport] = useState(false)
-  const [reportForm, setReportForm] = useState({ pestName: 'slug', city: '', severity: 'Medium', notes: '' })
+  const [reportForm, setReportForm] = useState({ pestName: 'aphids', city: '', severity: 'Medium', notes: '' })
+  const [pestList, setPestList] = useState([])
 
   const { authFetch } = useAuth()
 
   useEffect(() => {
     fetchAnalytics()
     fetchOutbreaks()
+    fetchPestList()
     detectLocationAndFetchWeather()
   }, [])
+
+  const fetchPestList = async () => {
+    try {
+      const res = await authFetch('/api/pests')
+      if (res.ok) {
+        const data = await res.json()
+        setPestList(data)
+      }
+    } catch (err) {
+      console.error('Failed to fetch pests:', err)
+    }
+  }
 
   const fetchAnalytics = async () => {
     try {
@@ -113,7 +122,7 @@ export default function Analytics() {
       if (!res.ok) throw new Error('Report submission failed')
       const newReport = await res.json()
       setOutbreaks(prev => [newReport, ...prev])
-      setReportForm({ pestName: 'slug', city: '', severity: 'Medium', notes: '' })
+      setReportForm({ pestName: 'aphids', city: '', severity: 'Medium', notes: '' })
     } catch (err) {
       console.error(err)
     } finally {
@@ -198,15 +207,15 @@ export default function Analytics() {
     <>
       {/* Hero */}
       <section className="hero-bg py-16 md:py-24 text-center relative overflow-hidden">
-        <div className="absolute inset-0 opacity-20" style={{ background: 'radial-gradient(ellipse 600px 400px at 50% 60%, rgba(52,211,153,0.12), transparent)' }} />
+        <div className="absolute inset-0 opacity-40" style={{ background: 'radial-gradient(ellipse 600px 400px at 50% 60%, rgba(22,101,52,0.06), transparent)' }} />
         <div className="relative z-10 max-w-3xl mx-auto px-4">
-          <div className="inline-flex items-center gap-2 text-emerald-400 bg-emerald-900/30 px-4 py-1.5 rounded-full text-sm font-medium mb-6 border border-emerald-800/40 animate-fade-in">
+          <div className="inline-flex items-center gap-2 text-emerald-800 bg-emerald-100/50 px-4 py-1.5 rounded-full text-sm font-semibold mb-6 border border-emerald-200/50 animate-fade-in shadow-sm">
             📊 Interactive Intelligence
           </div>
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-            <span className="bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg, #e8f5e9, #6ee7b7, #34d399)' }}>Pest Analytics</span>
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight animate-fade-in-up text-gray-900" style={{ animationDelay: '0.1s' }}>
+            Pest Analytics
           </h1>
-          <p className="mt-4 text-lg text-gray-400 max-w-xl mx-auto animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+          <p className="mt-4 text-lg text-gray-600 max-w-xl mx-auto animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
             Visualize pest patterns, track detection confidence, and receive weather-based risk updates.
           </p>
         </div>
@@ -236,31 +245,31 @@ export default function Analytics() {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="glass-card p-5 relative overflow-hidden group">
                 <div className="absolute right-3 top-3 text-3xl opacity-15 group-hover:scale-110 transition-transform">🔍</div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-emerald-500 mb-1">Total Scans</p>
-                <h3 className="text-3xl font-extrabold text-white">{totalScans}</h3>
+                <p className="text-xs font-semibold uppercase tracking-wider text-emerald-600 mb-1">Total Scans</p>
+                <h3 className="text-3xl font-extrabold text-gray-900">{totalScans}</h3>
                 <p className="text-xs text-gray-500 mt-1">Detections on database</p>
               </div>
 
               <div className="glass-card p-5 relative overflow-hidden group">
                 <div className="absolute right-3 top-3 text-3xl opacity-15 group-hover:scale-110 transition-transform">
-                  {PEST_ICONS[mostCommonPest.name] || '🐛'}
+                  {getPestIcon(mostCommonPest.name)}
                 </div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-emerald-500 mb-1">Primary Threat</p>
-                <h3 className="text-2xl font-extrabold text-white capitalize truncate">{mostCommonPest.name}</h3>
+                <p className="text-xs font-semibold uppercase tracking-wider text-emerald-600 mb-1">Primary Threat</p>
+                <h3 className="text-2xl font-extrabold text-gray-900 capitalize truncate">{mostCommonPest.name}</h3>
                 <p className="text-xs text-gray-500 mt-1">Count: {mostCommonPest.count} ({mostCommonPest.percentage}%)</p>
               </div>
 
               <div className="glass-card p-5 relative overflow-hidden group">
                 <div className="absolute right-3 top-3 text-3xl opacity-15 group-hover:scale-110 transition-transform">🧠</div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-emerald-500 mb-1">Avg Confidence</p>
-                <h3 className="text-3xl font-extrabold text-white">{avgConfidence}%</h3>
+                <p className="text-xs font-semibold uppercase tracking-wider text-emerald-600 mb-1">Avg Confidence</p>
+                <h3 className="text-3xl font-extrabold text-gray-900">{avgConfidence}%</h3>
                 <p className="text-xs text-gray-500 mt-1">Diagnosis accuracy score</p>
               </div>
 
               <div className="glass-card p-5 relative overflow-hidden group">
                 <div className="absolute right-3 top-3 text-3xl opacity-15 group-hover:scale-110 transition-transform">📅</div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-emerald-500 mb-1">Recent Activity</p>
-                <h3 className="text-3xl font-extrabold text-white">{scansLast7Days}</h3>
+                <p className="text-xs font-semibold uppercase tracking-wider text-emerald-600 mb-1">Recent Activity</p>
+                <h3 className="text-3xl font-extrabold text-gray-900">{scansLast7Days}</h3>
                 <p className="text-xs text-gray-500 mt-1">Scans in the last 7 days</p>
               </div>
             </div>
@@ -271,7 +280,7 @@ export default function Analytics() {
               {/* Timeline Area Chart */}
               <div className="glass-card p-6 flex flex-col justify-between">
                 <div>
-                  <h3 className="text-lg font-bold text-white mb-1">Activity Tracker</h3>
+                  <h3 className="text-lg font-bold text-gray-900 mb-1">Activity Tracker</h3>
                   <p className="text-xs text-gray-500 mb-4">Total scans per day over the last week</p>
                 </div>
                 
@@ -349,14 +358,14 @@ export default function Analytics() {
                               width={110}
                               height={28}
                               rx={4}
-                              fill="rgba(17, 26, 22, 0.95)"
-                              stroke="rgba(52, 211, 153, 0.3)"
+                              fill="#ffffff"
+                              stroke="rgba(22, 101, 52, 0.3)"
                               strokeWidth="1"
                             />
                             <text
                               x={p.x}
                               y={p.y - 24}
-                              fill="#e8f5e9"
+                              fill="#111827"
                               fontSize="10"
                               fontWeight="bold"
                               textAnchor="middle"
@@ -431,18 +440,18 @@ export default function Analytics() {
                     {hoveredDonutIdx !== null ? (
                       <>
                         <span className="text-xl leading-none">
-                          {PEST_ICONS[donutSegments[hoveredDonutIdx].name] || '🐛'}
+                          {getPestIcon(donutSegments[hoveredDonutIdx].name)}
                         </span>
-                        <span className="text-sm font-bold text-white capitalize truncate max-w-[85px] mt-1">
+                        <span className="text-sm font-bold text-gray-900 capitalize truncate max-w-[85px] mt-1">
                           {donutSegments[hoveredDonutIdx].name}
                         </span>
-                        <span className="text-xs font-semibold text-emerald-400 mt-0.5">
+                        <span className="text-xs font-semibold text-emerald-700 mt-0.5">
                           {donutSegments[hoveredDonutIdx].count} ({donutSegments[hoveredDonutIdx].percentage}%)
                         </span>
                       </>
                     ) : (
                       <>
-                        <span className="text-2xl font-extrabold text-white leading-none">
+                        <span className="text-2xl font-extrabold text-gray-900 leading-none">
                           {totalScans}
                         </span>
                         <span className="text-[10px] text-gray-500 uppercase tracking-widest mt-1">
@@ -455,26 +464,26 @@ export default function Analytics() {
 
                 {/* Legend List */}
                 <div className="flex-1 w-full space-y-2 overflow-y-auto max-h-[160px] pr-2 legend-list">
-                  <h4 className="text-xs font-semibold uppercase tracking-wider text-emerald-500 mb-2">Species Share</h4>
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-emerald-600 mb-2">Species Share</h4>
                   {donutSegments.map((seg, idx) => {
                     const isHovered = hoveredDonutIdx === idx
                     return (
                       <div
                         key={idx}
                         className={`flex items-center justify-between p-1.5 rounded-lg transition-colors cursor-pointer ${
-                          isHovered ? 'bg-emerald-950/20 border border-emerald-800/20' : 'border border-transparent'
+                          isHovered ? 'bg-emerald-50 border border-emerald-200' : 'border border-transparent'
                         }`}
                         onMouseEnter={() => setHoveredDonutIdx(idx)}
                         onMouseLeave={() => setHoveredDonutIdx(null)}
                       >
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: seg.color }} />
-                          <span className="text-xs text-gray-300 font-medium capitalize truncate">
-                            {PEST_ICONS[seg.name] || '🐛'} {seg.name}
+                          <span className="text-xs text-gray-700 font-medium capitalize truncate">
+                            {getPestIcon(seg.name)} {seg.name}
                           </span>
                         </div>
                         <div className="text-right shrink-0">
-                          <span className="text-xs font-bold text-white">{seg.count}</span>
+                          <span className="text-xs font-bold text-gray-900">{seg.count}</span>
                           <span className="text-[10px] text-gray-500 ml-1.5">({seg.percentage}%)</span>
                         </div>
                       </div>
@@ -490,47 +499,47 @@ export default function Analytics() {
               {/* Confidence Bands Distribution */}
               <div className="glass-card p-6 flex flex-col justify-between">
                 <div>
-                  <h3 className="text-lg font-bold text-white mb-1">Confidence Spread</h3>
+                  <h3 className="text-lg font-bold text-gray-900 mb-1">Confidence Spread</h3>
                   <p className="text-xs text-gray-500 mb-5">AI model certainty rates across all uploads</p>
                 </div>
 
                 <div className="space-y-4">
                   <div>
                     <div className="flex justify-between text-xs font-medium mb-1.5">
-                      <span className="text-emerald-400 flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                      <span className="text-emerald-700 flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-600" />
                         High Confidence (≥85%)
                       </span>
-                      <span className="text-white font-bold">{confidenceSpread.high} ({highPct}%)</span>
+                      <span className="text-gray-900 font-bold">{confidenceSpread.high} ({highPct}%)</span>
                     </div>
-                    <div className="w-full h-2 bg-emerald-950/30 rounded-full overflow-hidden border border-emerald-900/10">
-                      <div className="h-full bg-emerald-400 rounded-full transition-all duration-500" style={{ width: `${highPct}%` }} />
+                    <div className="w-full h-2 bg-emerald-100 rounded-full overflow-hidden border border-emerald-200">
+                      <div className="h-full bg-emerald-600 rounded-full transition-all duration-500" style={{ width: `${highPct}%` }} />
                     </div>
                   </div>
 
                   <div>
                     <div className="flex justify-between text-xs font-medium mb-1.5">
-                      <span className="text-amber-400 flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-amber-400" />
+                      <span className="text-amber-600 flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-amber-500" />
                         Medium (70% - 85%)
                       </span>
-                      <span className="text-white font-bold">{confidenceSpread.medium} ({medPct}%)</span>
+                      <span className="text-gray-900 font-bold">{confidenceSpread.medium} ({medPct}%)</span>
                     </div>
-                    <div className="w-full h-2 bg-amber-950/30 rounded-full overflow-hidden border border-amber-900/10">
-                      <div className="h-full bg-amber-400 rounded-full transition-all duration-500" style={{ width: `${medPct}%` }} />
+                    <div className="w-full h-2 bg-amber-100 rounded-full overflow-hidden border border-amber-200">
+                      <div className="h-full bg-amber-500 rounded-full transition-all duration-500" style={{ width: `${medPct}%` }} />
                     </div>
                   </div>
 
                   <div>
                     <div className="flex justify-between text-xs font-medium mb-1.5">
-                      <span className="text-red-400 flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-red-400" />
+                      <span className="text-red-600 flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-red-500" />
                         Low Confidence (&lt;70%)
                       </span>
-                      <span className="text-white font-bold">{confidenceSpread.low} ({lowPct}%)</span>
+                      <span className="text-gray-900 font-bold">{confidenceSpread.low} ({lowPct}%)</span>
                     </div>
-                    <div className="w-full h-2 bg-red-950/30 rounded-full overflow-hidden border border-red-900/10">
-                      <div className="h-full bg-red-400 rounded-full transition-all duration-500" style={{ width: `${lowPct}%` }} />
+                    <div className="w-full h-2 bg-red-100 rounded-full overflow-hidden border border-red-200">
+                      <div className="h-full bg-red-500 rounded-full transition-all duration-500" style={{ width: `${lowPct}%` }} />
                     </div>
                   </div>
                 </div>
@@ -543,7 +552,7 @@ export default function Analytics() {
               {/* Weather-Based Pest Advisor */}
               <div className="glass-card p-6 lg:col-span-2 flex flex-col justify-between">
                 <div>
-                  <h3 className="text-lg font-bold text-white mb-1">🌤️ Weather Pest-Risk Advisor</h3>
+                  <h3 className="text-lg font-bold text-gray-900 mb-1">🌤️ Weather Pest-Risk Advisor</h3>
                   <p className="text-xs text-gray-500 mb-4">Pest risk projections based on localized climate parameters</p>
                 </div>
 
@@ -555,19 +564,19 @@ export default function Analytics() {
                 ) : weatherData ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Weather stats */}
-                    <div className="flex flex-col justify-center bg-emerald-950/10 border border-emerald-900/15 rounded-xl p-4">
-                      <h4 className="text-xs font-semibold text-emerald-500 uppercase tracking-widest mb-2">Current weather</h4>
-                      <p className="text-2xl font-black text-white">{weatherData.weather.temp}°C</p>
-                      <p className="text-xs text-gray-400 mt-1">Humidity: {weatherData.weather.humidity}%</p>
-                      <p className="text-xs text-gray-400">Precipitation: {weatherData.weather.precipitation}mm</p>
+                    <div className="flex flex-col justify-center bg-emerald-50 border border-emerald-200/50 rounded-xl p-4">
+                      <h4 className="text-xs font-semibold text-emerald-600 uppercase tracking-widest mb-2">Current weather</h4>
+                      <p className="text-2xl font-black text-gray-900">{weatherData.weather.temp}°C</p>
+                      <p className="text-xs text-gray-600 mt-1">Humidity: {weatherData.weather.humidity}%</p>
+                      <p className="text-xs text-gray-600">Precipitation: {weatherData.weather.precipitation}mm</p>
                     </div>
 
                     {/* Pest risks list */}
                     <div className="space-y-2">
-                      <h4 className="text-xs font-semibold text-emerald-500 uppercase tracking-widest mb-2">Pest Risk Scores</h4>
+                      <h4 className="text-xs font-semibold text-emerald-600 uppercase tracking-widest mb-2">Pest Risk Scores</h4>
                       {weatherData.risks.map((r, i) => (
-                        <div key={i} className="flex items-center justify-between text-xs bg-emerald-950/5 p-2 rounded-lg border border-emerald-900/10">
-                          <span className="flex items-center gap-1.5 text-gray-300 font-medium">
+                        <div key={i} className="flex items-center justify-between text-xs bg-white border border-emerald-100 p-2 rounded-lg">
+                          <span className="flex items-center gap-1.5 text-gray-700 font-medium">
                             <span>{r.icon}</span>
                             <span className="capitalize">{r.name}</span>
                           </span>
@@ -577,7 +586,7 @@ export default function Analytics() {
                     </div>
 
                     {/* Advice tip box */}
-                    <div className="col-span-full bg-emerald-900/10 border border-emerald-800/30 rounded-xl p-3 text-xs leading-relaxed text-emerald-100 flex items-start gap-2">
+                    <div className="col-span-full bg-emerald-100 border border-emerald-200 rounded-xl p-3 text-xs leading-relaxed text-emerald-900 flex items-start gap-2">
                       <span className="text-sm shrink-0">💡</span>
                       <div>
                         {weatherData.advice.map((adv, i) => (
@@ -600,37 +609,37 @@ export default function Analytics() {
               
               {/* Report Sighting Form */}
               <div className="glass-card p-6">
-                <h3 className="text-lg font-bold text-white mb-1">📢 Report a Sighting</h3>
+                <h3 className="text-lg font-bold text-gray-900 mb-1">📢 Report a Sighting</h3>
                 <p className="text-xs text-gray-500 mb-5">Alert neighbors about pest sightings in your area</p>
 
                 <form onSubmit={handleReportSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-emerald-500 mb-1.5">Pest Type</label>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-emerald-600 mb-1.5">Pest Type</label>
                     <select
                       value={reportForm.pestName}
                       onChange={(e) => setReportForm(prev => ({ ...prev, pestName: e.target.value }))}
-                      className="w-full bg-emerald-950/30 border border-emerald-900/40 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+                      className="w-full bg-white border border-emerald-200 rounded-xl p-2.5 text-xs text-gray-900 focus:outline-none focus:border-emerald-500"
                     >
-                      {Object.keys(PEST_ICONS).map(name => (
-                        <option key={name} value={name}>{PEST_ICONS[name]} {name.charAt(0).toUpperCase() + name.slice(1)}</option>
+                      {pestList.map(p => (
+                        <option key={p.name} value={p.name}>{getPestIcon(p.name)} {p.name.charAt(0).toUpperCase() + p.name.slice(1)}</option>
                       ))}
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-emerald-500 mb-1.5">Location / City</label>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-emerald-600 mb-1.5">Location / City</label>
                     <input
                       type="text"
                       placeholder="e.g. San Francisco, CA"
                       value={reportForm.city}
                       onChange={(e) => setReportForm(prev => ({ ...prev, city: e.target.value }))}
-                      className="w-full bg-emerald-950/30 border border-emerald-900/40 rounded-xl p-2.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500"
+                      className="w-full bg-white border border-emerald-200 rounded-xl p-2.5 text-xs text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-500"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-emerald-500 mb-1.5">Severity</label>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-emerald-600 mb-1.5">Severity</label>
                     <div className="flex gap-2">
                       {['Low', 'Medium', 'High'].map(level => (
                         <button
@@ -639,8 +648,8 @@ export default function Analytics() {
                           onClick={() => setReportForm(prev => ({ ...prev, severity: level }))}
                           className={`flex-1 py-1.5 rounded-lg text-xs font-bold border transition-colors ${
                             reportForm.severity === level
-                              ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300'
-                              : 'bg-emerald-950/10 border-emerald-900/40 text-gray-500 hover:text-gray-300'
+                              ? 'bg-emerald-100 border-emerald-300 text-emerald-800'
+                              : 'bg-white border-emerald-200 text-gray-500 hover:text-gray-700'
                           }`}
                         >
                           {level}
@@ -650,12 +659,12 @@ export default function Analytics() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-emerald-500 mb-1.5">Additional Notes (Optional)</label>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-emerald-600 mb-1.5">Additional Notes (Optional)</label>
                     <textarea
                       placeholder="Specify host crop or density details..."
                       value={reportForm.notes}
                       onChange={(e) => setReportForm(prev => ({ ...prev, notes: e.target.value }))}
-                      className="w-full bg-emerald-950/30 border border-emerald-900/40 rounded-xl p-2.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500 h-16 resize-none"
+                      className="w-full bg-white border border-emerald-200 rounded-xl p-2.5 text-xs text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-500 h-16 resize-none"
                     />
                   </div>
 
@@ -672,7 +681,7 @@ export default function Analytics() {
               {/* Active Sightings Log */}
               <div className="glass-card p-6 lg:col-span-2 flex flex-col justify-between">
                 <div>
-                  <h3 className="text-lg font-bold text-white mb-1">🗺️ Community Sightings Log</h3>
+                  <h3 className="text-lg font-bold text-gray-900 mb-1">🗺️ Community Sightings Log</h3>
                   <p className="text-xs text-gray-500 mb-5">Crowdsourced active outbreaks reported by local growers</p>
                 </div>
 
@@ -685,29 +694,29 @@ export default function Analytics() {
                         key={report._id}
                         className="p-3.5 rounded-xl border flex items-start justify-between gap-3 text-xs"
                         style={{
-                          background: 'rgba(52,211,153,0.02)',
-                          borderColor: 'rgba(52,211,153,0.07)'
+                          background: '#ffffff',
+                          borderColor: 'var(--border-subtle)'
                         }}
                       >
                         <div className="space-y-1 min-w-0">
                           <div className="flex items-center gap-1.5">
-                            <span className="text-lg shrink-0">{PEST_ICONS[report.pestName] || '🐛'}</span>
-                            <span className="font-bold text-white capitalize">{report.pestName} Sighting</span>
+                            <span className="text-lg shrink-0">{getPestIcon(report.pestName)}</span>
+                            <span className="font-bold text-gray-900 capitalize">{report.pestName} Sighting</span>
                             <span className={`px-2 py-0.5 rounded-full text-[9px] font-black border uppercase tracking-wider ${
-                              report.severity === 'High' ? 'bg-red-950/20 border-red-900/30 text-red-400' :
-                              report.severity === 'Medium' ? 'bg-amber-950/20 border-amber-900/30 text-amber-400' :
-                              'bg-emerald-950/20 border-emerald-900/30 text-emerald-400'
+                              report.severity === 'High' ? 'bg-red-50 border-red-200 text-red-700' :
+                              report.severity === 'Medium' ? 'bg-amber-50 border-amber-200 text-amber-700' :
+                              'bg-emerald-50 border-emerald-200 text-emerald-700'
                             }`}>
                               {report.severity}
                             </span>
                           </div>
-                          <p className="text-gray-400 font-medium">📍 {report.city}</p>
+                          <p className="text-gray-600 font-medium">📍 {report.city}</p>
                           {report.notes && <p className="text-gray-500 italic mt-1 leading-normal">"{report.notes}"</p>}
                         </div>
                         
                         <div className="text-right shrink-0">
-                          <p className="text-[10px] text-emerald-500 font-semibold">{report.user?.name || 'Anonymous User'}</p>
-                          <p className="text-[9px] text-gray-600 mt-1">
+                          <p className="text-[10px] text-emerald-600 font-semibold">{report.user?.name || 'Anonymous User'}</p>
+                          <p className="text-[9px] text-gray-500 mt-1">
                             {new Date(report.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                           </p>
                         </div>

@@ -29,15 +29,15 @@ export default function Login() {
     <>
       {/* Hero */}
       <section className="hero-bg py-16 md:py-24 text-center relative overflow-hidden">
-        <div className="absolute inset-0 opacity-20" style={{ background: 'radial-gradient(ellipse 600px 400px at 50% 60%, rgba(52,211,153,0.12), transparent)' }} />
+        <div className="absolute inset-0 opacity-40" style={{ background: 'radial-gradient(ellipse 600px 400px at 50% 60%, rgba(22,101,52,0.06), transparent)' }} />
         <div className="relative z-10 max-w-3xl mx-auto px-4">
-          <div className="inline-flex items-center gap-2 text-emerald-400 bg-emerald-900/30 px-4 py-1.5 rounded-full text-sm font-medium mb-6 border border-emerald-800/40 animate-fade-in">
+          <div className="inline-flex items-center gap-2 text-emerald-800 bg-emerald-100/50 px-4 py-1.5 rounded-full text-sm font-semibold mb-6 border border-emerald-200/50 animate-fade-in shadow-sm">
             🔐 Welcome Back
           </div>
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-            <span className="bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg, #e8f5e9, #6ee7b7, #34d399)' }}>Sign In</span>
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight animate-fade-in-up text-gray-900" style={{ animationDelay: '0.1s' }}>
+            Sign In
           </h1>
-          <p className="mt-4 text-lg text-gray-400 max-w-xl mx-auto animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+          <p className="mt-4 text-lg text-gray-600 max-w-xl mx-auto animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
             Log in to access pest detection and view your prediction history.
           </p>
         </div>
@@ -49,7 +49,7 @@ export default function Login() {
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Email */}
             <div>
-              <label htmlFor="login-email" className="block text-sm font-semibold text-gray-300 mb-2">Email Address</label>
+              <label htmlFor="login-email" className="block text-sm font-bold text-gray-700 mb-2">Email Address</label>
               <div className="auth-input-wrapper">
                 <svg className="auth-input-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -69,7 +69,7 @@ export default function Login() {
 
             {/* Password */}
             <div>
-              <label htmlFor="login-password" className="block text-sm font-semibold text-gray-300 mb-2">Password</label>
+              <label htmlFor="login-password" className="block text-sm font-bold text-gray-700 mb-2">Password</label>
               <div className="auth-input-wrapper">
                 <svg className="auth-input-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
