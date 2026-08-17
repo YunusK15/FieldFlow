@@ -6,6 +6,7 @@ __pycache__/
 
 # Model & data files (too large for GitHub)
 *.pth
+!pest_classifier_v2.pth
 *.db
 dataset.zip
 dataset_extracted/
