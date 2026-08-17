@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { getPestIcon } from '../utils/pestIcons'
@@ -35,14 +35,7 @@ export default function Analytics() {
 
   const { authFetch } = useAuth()
 
-  useEffect(() => {
-    fetchAnalytics()
-    fetchOutbreaks()
-    fetchPestList()
-    detectLocationAndFetchWeather()
-  }, [])
-
-  const fetchPestList = async () => {
+  const fetchPestList = useCallback(async () => {
     try {
       const res = await authFetch('/api/pests')
       if (res.ok) {
@@ -52,9 +45,9 @@ export default function Analytics() {
     } catch (err) {
       console.error('Failed to fetch pests:', err)
     }
-  }
+  }, [authFetch])
 
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     try {
       const res = await authFetch('/api/predictions/analytics')
       if (!res.ok) throw new Error('Failed to fetch predictions analytics')
@@ -65,9 +58,9 @@ export default function Analytics() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [authFetch])
 
-  const fetchOutbreaks = async () => {
+  const fetchOutbreaks = useCallback(async () => {
     try {
       const res = await authFetch('/api/outbreaks')
       if (res.ok) {
@@ -76,25 +69,9 @@ export default function Analytics() {
     } catch (err) {
       console.error('Failed to fetch community outbreaks:', err)
     }
-  }
+  }, [authFetch])
 
-  const detectLocationAndFetchWeather = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          fetchWeatherRisk(position.coords.latitude, position.coords.longitude)
-        },
-        (err) => {
-          console.warn('Location access denied. Falling back to default weather indices.')
-          fetchWeatherRisk('37.7749', '-122.4194') // San Francisco default
-        }
-      )
-    } else {
-      fetchWeatherRisk('37.7749', '-122.4194')
-    }
-  }
-
-  const fetchWeatherRisk = async (lat, lon) => {
+  const fetchWeatherRisk = useCallback(async (lat, lon) => {
     setWeatherLoading(true)
     try {
       const res = await authFetch(`/api/weather/risk?lat=${lat}&lon=${lon}`)
@@ -106,7 +83,34 @@ export default function Analytics() {
     } finally {
       setWeatherLoading(false)
     }
-  }
+  }, [authFetch])
+
+  const detectLocationAndFetchWeather = useCallback(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          fetchWeatherRisk(position.coords.latitude, position.coords.longitude)
+        },
+        () => {
+          console.warn('Location access denied. Falling back to default weather indices.')
+          fetchWeatherRisk('37.7749', '-122.4194') // San Francisco default
+        }
+      )
+    } else {
+      fetchWeatherRisk('37.7749', '-122.4194')
+    }
+  }, [fetchWeatherRisk])
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchAnalytics()
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchOutbreaks()
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchPestList()
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    detectLocationAndFetchWeather()
+  }, [fetchAnalytics, fetchOutbreaks, fetchPestList, detectLocationAndFetchWeather])
 
   const handleReportSubmit = async (e) => {
     e.preventDefault()
@@ -185,18 +189,21 @@ export default function Analytics() {
   const donutCY = 65
   const donutCircumference = 2 * Math.PI * donutR
 
-  let accumulatedPercent = 0
-  const donutSegments = sortedPests.map((pest, idx) => {
+  const donutSegments = sortedPests.reduce((acc, pest, idx) => {
+    const accumulatedPercent = acc.length > 0 ? acc[acc.length - 1].nextOffsetPercent : 0
     const strokeDasharray = `${(pest.count / totalScans) * donutCircumference} ${donutCircumference}`
     const strokeDashoffset = -((accumulatedPercent / 100) * donutCircumference)
-    accumulatedPercent += (pest.count / totalScans) * 100
-    return {
+    const nextOffsetPercent = accumulatedPercent + (pest.count / totalScans) * 100
+    
+    acc.push({
       ...pest,
       strokeDasharray,
       strokeDashoffset,
-      color: CHART_COLORS[idx % CHART_COLORS.length]
-    }
-  })
+      color: CHART_COLORS[idx % CHART_COLORS.length],
+      nextOffsetPercent
+    })
+    return acc
+  }, [])
 
   // Calculations for confidence spread percents
   const highPct = totalScans ? Math.round((confidenceSpread.high / totalScans) * 100) : 0

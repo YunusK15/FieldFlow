@@ -23,7 +23,8 @@ app.use(helmet());
 
 const allowedOrigins = [
   'http://localhost:5173',
-  process.env.FRONTEND_URL // Vercel production URL
+  'https://yk-field-flow.vercel.app', // Explicitly allow your Vercel URL
+  process.env.FRONTEND_URL ? process.env.FRONTEND_URL.replace(/\/$/, '') : null
 ].filter(Boolean);
 
 app.use(cors({

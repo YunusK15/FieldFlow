@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 
 const AuthContext = createContext(null)
 
@@ -10,18 +10,27 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(localStorage.getItem('fieldflow_token'))
   const [loading, setLoading] = useState(true)
 
+  const logout = useCallback(() => {
+    localStorage.removeItem('fieldflow_token')
+    localStorage.removeItem('fieldflow_user')
+    setToken(null)
+    setUser(null)
+  }, [])
+
   // On mount, restore user from localStorage
   useEffect(() => {
     const storedUser = localStorage.getItem('fieldflow_user')
     if (storedUser && token) {
       try {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setUser(JSON.parse(storedUser))
       } catch {
         logout()
       }
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(false)
-  }, [])
+  }, [token, logout])
 
   const login = async (email, password) => {
     const res = await fetch(`${API_BASE}/auth/login`, {
@@ -55,12 +64,7 @@ export function AuthProvider({ children }) {
     return data
   }
 
-  const logout = () => {
-    localStorage.removeItem('fieldflow_token')
-    localStorage.removeItem('fieldflow_user')
-    setToken(null)
-    setUser(null)
-  }
+
 
   // Helper for authenticated fetch calls
   const authFetch = (url, options = {}) => {
@@ -82,6 +86,7 @@ export function AuthProvider({ children }) {
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const ctx = useContext(AuthContext)
   if (!ctx) throw new Error('useAuth must be used within AuthProvider')

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 
 export default function Technologies() {
@@ -8,11 +8,7 @@ export default function Technologies() {
   const [syncing, setSyncing] = useState(false)
   const { user, authFetch } = useAuth()
 
-  useEffect(() => {
-    fetchTechnologies()
-  }, [])
-
-  const fetchTechnologies = async () => {
+  const fetchTechnologies = useCallback(async () => {
     try {
       const res = await authFetch('/api/technologies')
       if (!res.ok) throw new Error('Failed to fetch technologies catalog.')
@@ -24,7 +20,12 @@ export default function Technologies() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [authFetch])
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchTechnologies()
+  }, [fetchTechnologies])
 
   const handleSync = async () => {
     setSyncing(true)
